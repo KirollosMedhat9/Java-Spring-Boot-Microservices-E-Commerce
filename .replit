@@ -62,3 +62,27 @@ mainClass = "Main"
 build = ["javac", "-classpath", ".:target/dependency/*", "-d", ".", "$(find . -type f -name '*.java')"]
 run = ["java", "-classpath", ".:target/dependency/*", "Main"]
 deploymentTarget = "cloudrun"
+
+[workflows]
+runButton = "Build All Services"
+
+[[workflows.workflow]]
+name = "Build All Services"
+author = 43310516
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "mvn clean install -DskipTests"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"All services built successfully!\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Start infrastructure: docker-compose up -d\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Then run individual services with: mvn spring-boot:run -pl [service-name]\""
