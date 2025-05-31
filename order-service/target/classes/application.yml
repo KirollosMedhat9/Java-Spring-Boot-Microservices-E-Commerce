@@ -6,25 +6,27 @@ spring:
   application:
     name: order-service
   datasource:
-    url: jdbc:postgresql://postgres-db:5432/order_db
-    username: postgres
+    url: jdbc:postgresql://0.0.0.0:5432/order_db
+    username: ${POSTGRES_USER:postgres}
     password: ${POSTGRES_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   kafka:
-    bootstrap-servers: kafka:9092
     producer:
+      bootstrap-servers: 0.0.0.0:9092
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 eureka:
   client:
-    service-url:
-      defaultZone: http://service-registry:8761/eureka/
+    serviceUrl:
+      defaultZone: http://0.0.0.0:8761/eureka/
   instance:
     prefer-ip-address: true
 
@@ -32,7 +34,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: "health,info,prometheus"
   metrics:
     tags:
       application: ${spring.application.name}
