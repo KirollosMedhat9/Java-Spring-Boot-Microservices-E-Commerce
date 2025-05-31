@@ -9,6 +9,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: product_db
+      MYSQL_DATABASE_2: inventory_db
+      MYSQL_DATABASE_3: auth_db
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
