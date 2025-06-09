@@ -25,4 +25,7 @@ public class InventoryItem {
     
     @Column(nullable = false)
     private Integer reservedQuantity = 0;
+
+    @Column(nullable = false)
+    private Integer stockQuantity;
 }

@@ -15,9 +15,41 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationServiceImpl implements NotificationService {
-    
+
+    @Override
+    public void sendNotification(NotificationDTO notificationDTO) {
+        // Implementation for sending notifications (email, SMS, etc.)
+        log.info("Sending notification: {} to {}", notificationDTO.getMessage(), notificationDTO.getRecipient());
+
+        // Here you would integrate with email service, SMS service, etc.
+        // For demo purposes, we'll just log it
+    }
+
+    @KafkaListener(topics = "order.created", groupId = "notification-service")
+    public void handleOrderCreated(OrderCreatedEvent orderEvent) {
+        log.info("Received order created event for order ID: {}", orderEvent.getOrderId());
+
+        // Send notification to customer
+        NotificationDTO notification = new NotificationDTO(
+                orderEvent.getCustomerId(),
+                "ORDER_CREATED",
+                "Your order #" + orderEvent.getOrderId() + " has been created successfully. Total amount: $" + orderEvent.getTotalAmount(),
+                orderEvent.getOrderDate()
+        );
+
+        sendNotification(notification);
+    }
+
+    @KafkaListener(topics = "order.status.updated", groupId = "notification-service")
+    public void handleOrderStatusUpdated(Object orderEvent) {
+        log.info("Received order status updated event: {}", orderEvent);
+
+        // Send status update notification
+        // Implementation would parse the order status and send appropriate notification
+    }
+
     private final JavaMailSender mailSender;
-    
+
     @Override
     public void sendNotification(NotificationDTO notificationDTO) {
         switch (notificationDTO.getType()) {
@@ -34,39 +66,39 @@ public class NotificationServiceImpl implements NotificationService {
                 log.warn("Unknown notification type: {}", notificationDTO.getType());
         }
     }
-    
+
     @Override
     @KafkaListener(topics = "order.created", groupId = "notification-service")
     public void sendOrderConfirmation(OrderCreatedEvent orderEvent) {
         log.info("Sending order confirmation for order: {}", orderEvent.getOrderId());
-        
+
         String subject = "Order Confirmation - Order #" + orderEvent.getOrderId();
         String body = buildOrderConfirmationEmail(orderEvent);
-        
+
         sendEmail(orderEvent.getCustomerEmail(), subject, body);
     }
-    
+
     @Override
     public void sendWelcomeEmail(String email, String customerName) {
         String subject = "Welcome to Our E-commerce Platform!";
         String body = "Dear " + customerName + ",\n\n" +
-                     "Welcome to our e-commerce platform! We're excited to have you as a customer.\n\n" +
-                     "Start exploring our products and enjoy shopping with us!\n\n" +
-                     "Best regards,\nThe E-commerce Team";
-        
+                "Welcome to our e-commerce platform! We're excited to have you as a customer.\n\n" +
+                "Start exploring our products and enjoy shopping with us!\n\n" +
+                "Best regards,\nThe E-commerce Team";
+
         sendEmail(email, subject, body);
     }
-    
+
     @Override
     public void sendOrderStatusUpdate(String email, Long orderId, String status) {
         String subject = "Order Status Update - Order #" + orderId;
         String body = "Your order #" + orderId + " status has been updated to: " + status + "\n\n" +
-                     "Thank you for shopping with us!\n\n" +
-                     "Best regards,\nThe E-commerce Team";
-        
+                "Thank you for shopping with us!\n\n" +
+                "Best regards,\nThe E-commerce Team";
+
         sendEmail(email, subject, body);
     }
-    
+
     private void sendEmail(String to, String subject, String body) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -74,24 +106,24 @@ public class NotificationServiceImpl implements NotificationService {
             message.setSubject(subject);
             message.setText(body);
             message.setFrom("noreply@ecommerce.com");
-            
+
             mailSender.send(message);
             log.info("Email sent successfully to: {}", to);
         } catch (Exception e) {
             log.error("Failed to send email to: {}", to, e);
         }
     }
-    
+
     private void sendSMS(String phoneNumber, String message) {
         // Implementation for SMS sending (e.g., using Twilio, AWS SNS, etc.)
         log.info("SMS sent to {}: {}", phoneNumber, message);
     }
-    
+
     private void sendPushNotification(String deviceToken, String title, String body) {
         // Implementation for push notifications (e.g., using Firebase Cloud Messaging)
         log.info("Push notification sent to {}: {} - {}", deviceToken, title, body);
     }
-    
+
     private String buildOrderConfirmationEmail(OrderCreatedEvent orderEvent) {
         StringBuilder body = new StringBuilder();
         body.append("Dear Customer,\n\n");
@@ -99,16 +131,16 @@ public class NotificationServiceImpl implements NotificationService {
         body.append("Order ID: ").append(orderEvent.getOrderId()).append("\n");
         body.append("Total Amount: $").append(orderEvent.getTotalAmount()).append("\n\n");
         body.append("Items:\n");
-        
+
         for (OrderCreatedEvent.OrderItemEvent item : orderEvent.getItems()) {
             body.append("- Product ID: ").append(item.getProductId())
-                .append(", Quantity: ").append(item.getQuantity())
-                .append(", Price: $").append(item.getPrice()).append("\n");
+                    .append(", Quantity: ").append(item.getQuantity())
+                    .append(", Price: $").append(item.getPrice()).append("\n");
         }
-        
+
         body.append("\nWe'll notify you when your order ships!\n\n");
         body.append("Best regards,\nThe E-commerce Team");
-        
+
         return body.toString();
     }
 }

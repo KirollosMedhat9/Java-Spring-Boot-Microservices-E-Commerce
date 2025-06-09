@@ -19,13 +19,19 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@RequiredArgsConstructor
+
 public class AuthController {
     
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final JwtService jwtService;
-    
+
+    public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtService jwtService) {
+        this.authenticationManager = authenticationManager;
+        this.userService = userService;
+        this.jwtService = jwtService;
+    }
+
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
         try {

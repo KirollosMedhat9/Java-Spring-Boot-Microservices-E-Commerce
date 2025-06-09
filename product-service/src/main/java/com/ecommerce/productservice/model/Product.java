@@ -10,9 +10,9 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "products")
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
+@Data
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,10 +29,11 @@ public class Product {
     
     @Column(nullable = false)
     private Integer stockQuantity;
-    
+
     @Column
     private String category;
     
     @Column
     private String imageUrl;
+
 }

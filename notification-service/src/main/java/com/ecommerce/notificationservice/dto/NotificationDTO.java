@@ -13,7 +13,10 @@ public class NotificationDTO {
     private String subject;
     private String body;
     private NotificationType type;
-    
+
+    public NotificationDTO(String customerEmail, String orderCreated, String s) {
+    }
+
     public enum NotificationType {
         EMAIL, SMS, PUSH
     }

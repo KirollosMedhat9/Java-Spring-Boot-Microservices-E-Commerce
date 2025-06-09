@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.ecommerce</groupId>
-    <artifactId>ecommerce-platform</artifactId>
+    <artifactId>E-Commerce-Microservices</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
@@ -46,6 +46,12 @@
                 <version>${spring-cloud.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.36</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

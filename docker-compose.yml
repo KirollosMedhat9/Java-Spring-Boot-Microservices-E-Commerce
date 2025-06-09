@@ -1,6 +1,38 @@
 
 version: '3.8'
 services:
+  #Services
+  service-registry:
+    build: ./service-registry/
+    ports:
+      - "8761:8761"
+    volumes:
+      - ./service-registry/target:/app
+    entrypoint: [ "java", "-jar", "/app/service-registry-1.0.0.jar" ]
+
+  api-gateway:
+    build: ./api-gateway/
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./api-gateway/target:/app
+    entrypoint: [ "java", "-jar", "/app/api-gateway-1.0.0.jar" ]
+    depends_on:
+      - service-registry
+
+#  product-service:
+#    build: ./product-service/
+#    ports:
+#      - "8081:8081"
+#    volumes:
+#      - ./product-service/target:/app
+#    entrypoint: [ "java", "-jar", "/app/product-service-1.0.0.jar" ]
+#    depends_on:
+#      - service-registry
+#      - mysql-db
+
+
+    #Databases
   mysql-db:
     image: mysql:8.0
     container_name: mysql-db
@@ -20,7 +52,7 @@ services:
     image: postgres:15
     container_name: postgres-db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -34,9 +66,9 @@ services:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
     ports:
-      - "2181:2181"
+      - "3181:3181"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_CLIENT_PORT: 3181
       ZOOKEEPER_TICK_TIME: 2000
     networks:
       - ecommerce-network
@@ -49,7 +81,7 @@ services:
       - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:3181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_HOST://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT

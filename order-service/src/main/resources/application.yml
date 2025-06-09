@@ -6,7 +6,7 @@ spring:
   application:
     name: order-service
   datasource:
-    url: jdbc:postgresql://0.0.0.0:5432/order_db
+    url: jdbc:postgresql://localhost:5433/order_db
     username: ${POSTGRES_USER:postgres}
     password: ${POSTGRES_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
@@ -19,14 +19,14 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   kafka:
     producer:
-      bootstrap-servers: 0.0.0.0:9092
+      bootstrap-servers: localhost:9092
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://0.0.0.0:8761/eureka/
+      defaultZone: http://localhost:8761/eureka/
   instance:
     prefer-ip-address: true
 

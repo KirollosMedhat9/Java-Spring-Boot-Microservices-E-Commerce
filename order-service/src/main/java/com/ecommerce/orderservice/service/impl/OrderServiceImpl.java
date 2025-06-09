@@ -1,6 +1,7 @@
 
 package com.ecommerce.orderservice.service.impl;
 
+
 import com.ecommerce.orderservice.dto.OrderDTO;
 import com.ecommerce.orderservice.dto.OrderItemDTO;
 import com.ecommerce.orderservice.model.Order;
@@ -33,19 +34,20 @@ public class OrderServiceImpl implements OrderService {
         Order order = mapToEntity(orderDTO);
         order.setOrderDate(LocalDateTime.now());
         order.setStatus(OrderStatus.PENDING);
-        
-        // Calculate total amount
+
+        // Calculate total amount as if not given correctly
         BigDecimal totalAmount = order.getItems().stream()
                 .map(OrderItem::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         order.setTotalAmount(totalAmount);
-        
+
         Order savedOrder = orderRepository.save(order);
-        
+
         // Publish order created event
-        kafkaTemplate.send("order.created", savedOrder.getId().toString(), savedOrder);
+        OrderDTO event = mapToDTO(savedOrder);
+        kafkaTemplate.send("order.created", savedOrder.getId().toString(), event);
         log.info("Order created with ID: {}", savedOrder.getId());
-        
+
         return mapToDTO(savedOrder);
     }
 
@@ -75,14 +77,15 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO updateOrderStatus(Long id, OrderStatus status) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + id));
-        
+
         order.setStatus(status);
         Order updatedOrder = orderRepository.save(order);
-        
+
         // Publish order status updated event
-        kafkaTemplate.send("order.status.updated", updatedOrder.getId().toString(), updatedOrder);
+        kafkaTemplate.send("order.status.updated", updatedOrder.getId().toString(),
+                mapToDTO(updatedOrder));
         log.info("Order status updated for ID: {} to {}", updatedOrder.getId(), status);
-        
+
         return mapToDTO(updatedOrder);
     }
 
@@ -91,16 +94,16 @@ public class OrderServiceImpl implements OrderService {
     public void cancelOrder(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + id));
-        
+
         if (order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED) {
             throw new RuntimeException("Cannot cancel order that is already shipped or delivered");
         }
-        
+
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
-        
+
         // Publish order cancelled event
-        kafkaTemplate.send("order.cancelled", order.getId().toString(), order);
+        kafkaTemplate.send("order.cancelled", order.getId().toString(), mapToDTO(order));
         log.info("Order cancelled with ID: {}", order.getId());
     }
 
@@ -108,7 +111,7 @@ public class OrderServiceImpl implements OrderService {
         List<OrderItemDTO> itemDTOs = order.getItems().stream()
                 .map(this::mapItemToDTO)
                 .collect(Collectors.toList());
-        
+
         return new OrderDTO(
                 order.getId(),
                 order.getCustomerId(),
@@ -130,12 +133,12 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalAmount(orderDTO.getTotalAmount());
         order.setShippingAddress(orderDTO.getShippingAddress());
         order.setBillingAddress(orderDTO.getBillingAddress());
-        
+
         List<OrderItem> items = orderDTO.getItems().stream()
                 .map(itemDTO -> mapItemToEntity(itemDTO, order))
                 .collect(Collectors.toList());
         order.setItems(items);
-        
+
         return order;
     }
 

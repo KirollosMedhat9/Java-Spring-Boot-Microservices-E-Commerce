@@ -1,0 +1,10 @@
+F:\Spring\Replit\DisloyalDelectableServers (1)\E-Commerce-Microservices\order-service\src\main\java\com\ecommerce\orderservice\controller\OrderController.java
+F:\Spring\Replit\DisloyalDelectableServers (1)\E-Commerce-Microservices\order-service\src\main\java\com\ecommerce\orderservice\dto\OrderDTO.java
+F:\Spring\Replit\DisloyalDelectableServers (1)\E-Commerce-Microservices\order-service\src\main\java\com\ecommerce\orderservice\dto\OrderItemDTO.java
+F:\Spring\Replit\DisloyalDelectableServers (1)\E-Commerce-Microservices\order-service\src\main\java\com\ecommerce\orderservice\model\Order.java
+F:\Spring\Replit\DisloyalDelectableServers (1)\E-Commerce-Microservices\order-service\src\main\java\com\ecommerce\orderservice\model\OrderItem.java
+F:\Spring\Replit\DisloyalDelectableServers (1)\E-Commerce-Microservices\order-service\src\main\java\com\ecommerce\orderservice\model\OrderStatus.java
+F:\Spring\Replit\DisloyalDelectableServers (1)\E-Commerce-Microservices\order-service\src\main\java\com\ecommerce\orderservice\OrderServiceApplication.java
+F:\Spring\Replit\DisloyalDelectableServers (1)\E-Commerce-Microservices\order-service\src\main\java\com\ecommerce\orderservice\repository\OrderRepository.java
+F:\Spring\Replit\DisloyalDelectableServers (1)\E-Commerce-Microservices\order-service\src\main\java\com\ecommerce\orderservice\service\impl\OrderServiceImpl.java
+F:\Spring\Replit\DisloyalDelectableServers (1)\E-Commerce-Microservices\order-service\src\main\java\com\ecommerce\orderservice\service\OrderService.java

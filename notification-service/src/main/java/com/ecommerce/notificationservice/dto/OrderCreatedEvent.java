@@ -16,7 +16,7 @@ public class OrderCreatedEvent {
     private String customerEmail;
     private BigDecimal totalAmount;
     private List<OrderItemEvent> items;
-    
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

@@ -1,8 +1,9 @@
-
 package com.ecommerce.inventoryservice.service.impl;
 
 import com.ecommerce.inventoryservice.dto.InventoryItemDTO;
-import com.ecommerce.inventoryservice.dto.OrderCreatedEvent;
+import com.ecommerce.orderservice.dto.OrderDTO;
+import com.ecommerce.orderservice.dto.OrderItemDTO;
+import com.ecommerce.productservice.dto.ProductDTO;
 import com.ecommerce.inventoryservice.model.InventoryItem;
 import com.ecommerce.inventoryservice.repository.InventoryItemRepository;
 import com.ecommerce.inventoryservice.service.InventoryService;
@@ -19,113 +20,256 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class InventoryServiceImpl implements InventoryService {
-    
-    private final InventoryItemRepository inventoryItemRepository;
-    
+
+    private final InventoryItemRepository inventoryRepository;
+
+    @Override
+    public InventoryItemDTO createInventoryItem(InventoryItemDTO itemDTO) {
+        InventoryItem item = mapToEntity(itemDTO);
+        InventoryItem savedItem = inventoryRepository.save(item);
+        log.info("Inventory item created with ID: {}", savedItem.getId());
+        return mapToDTO(savedItem);
+    }
+
+    @Override
+    public InventoryItemDTO getInventoryItemById(Long id) {
+        InventoryItem item = inventoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Inventory item not found with ID: " + id));
+        return mapToDTO(item);
+    }
+
+    @Override
+    public InventoryItemDTO getInventoryByProductId(Long productId) {
+        InventoryItem item = inventoryRepository.findByProductId(productId)
+                .orElseThrow(() -> new RuntimeException("Inventory not found for product ID: " + productId));
+        return mapToDTO(item);
+    }
+
+    @Override
+    public List<InventoryItemDTO> getAllInventoryItems() {
+        return inventoryRepository.findAll().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    @Override
+    public InventoryItemDTO updateStock(Long productId, Integer quantity) {
+        InventoryItem item = inventoryRepository.findByProductId(productId)
+                .orElseThrow(() -> new RuntimeException("Inventory not found for product ID: " + productId));
+
+        item.setStockQuantity(quantity);
+        InventoryItem updatedItem = inventoryRepository.save(item);
+        log.info("Stock updated for product ID: {} to quantity: {}", productId, quantity);
+
+        return mapToDTO(updatedItem);
+    }
+
+    @Override
+    public boolean isInStock(Long productId, Integer requiredQuantity) {
+        InventoryItem item = inventoryRepository.findByProductId(productId)
+                .orElse(null);
+
+        if (item == null) {
+            return false;
+        }
+
+        return item.getStockQuantity() >= requiredQuantity;
+    }
+
+    // Kafka Consumers
+    @KafkaListener(topics = "order.created", groupId = "inventory-service")
+    public void handleOrderCreated(OrderDTO orderEvent) {
+        log.info("Received order created event for order ID: {}", orderEvent.getId());
+
+        // Process each order item to update inventory
+        orderEvent.getItems().forEach(orderItem -> {
+            try {
+                InventoryItem inventoryItem = inventoryRepository.findByProductId(orderItem.getProductId())
+                        .orElseThrow(() -> new RuntimeException("Product not found in inventory: " + orderItem.getProductId()));
+
+                if (inventoryItem.getStockQuantity() >= orderItem.getQuantity()) {
+                    inventoryItem.setStockQuantity(inventoryItem.getStockQuantity() - orderItem.getQuantity());
+                    inventoryRepository.save(inventoryItem);
+                    log.info("Reduced stock for product {} by {}", orderItem.getProductId(), orderItem.getQuantity());
+                } else {
+                    log.error("Insufficient stock for product {}: required {}, available {}",
+                            orderItem.getProductId(), orderItem.getQuantity(), inventoryItem.getStockQuantity());
+                }
+            } catch (Exception e) {
+                log.error("Error processing order item for product {}: {}", orderItem.getProductId(), e.getMessage());
+            }
+        });
+    }
+
+    @KafkaListener(topics = "product.created", groupId = "inventory-service")
+    public void handleProductCreated(ProductDTO productDTO) {
+        log.info("Received product created event: {}", productDTO);
+
+        // Parse the product event and create inventory entry
+        try {
+            // Assuming productDTO contains productId and initial stock
+            Long productId = extractProductId(productDTO);
+            Integer initialStock = extractInitialStock(productDTO);
+
+            // Create inventory item for new product
+            InventoryItem newInventoryItem = new InventoryItem();
+            newInventoryItem.setProductId(productId);
+            newInventoryItem.setQuantity(productDTO.getStockQuantity());
+            newInventoryItem.setStockQuantity(initialStock != null ? initialStock : 0);
+            newInventoryItem.setReservedQuantity(0);
+
+            inventoryRepository.save(newInventoryItem);
+            createOrUpdateInventory(mapToDTO(newInventoryItem));
+            log.info("Created inventory entry for new product ID: {}", productId);
+        } catch (Exception e) {
+            log.error("Error creating inventory for new product: {}", e.getMessage());
+        }
+    }
+
+    @KafkaListener(topics = "product.deleted", groupId = "inventory-service")
+    public void handleProductDeleted(ProductDTO productDTO) {
+        log.info("Received product deleted event: {}", productDTO);
+
+        try {
+            Long productId = extractProductId(productDTO);
+            inventoryRepository.findByProductId(productId).ifPresent(inventoryItem -> {
+                inventoryRepository.delete(inventoryItem);
+                log.info("Removed inventory entry for deleted product ID: {}", productId);
+            });
+        } catch (Exception e) {
+            log.error("Error deleting inventory for product: {}", e.getMessage());
+        }
+    }
+
+    //    public Long extractProductId(ProductDTO event) {
+//        // Simple extraction - in real implementation, you'd parse the JSON
+//        String eventStr = event.toString();
+//        // This is a simplified extraction - you should implement proper JSON parsing
+//        return event.getId(); // Placeholder
+//    }
+    @Override
+    public Long extractProductId(ProductDTO event) {
+        // Simple extraction - in real implementation, you'd parse the JSON
+        String eventStr = event.toString();
+        // This is a simplified extraction - you should implement proper JSON parsing
+        return event.getId(); // Placeholder
+    }
+
+    private Integer extractInitialStock(ProductDTO event) {
+        // Extract initial stock from product event
+        return event.getStockQuantity(); // Default to 0 if not specified
+    }
+
+    private InventoryItemDTO mapToDTO(InventoryItem item) {
+        return new InventoryItemDTO(
+                item.getId(),
+                item.getProductId(),
+                item.getStockQuantity(),
+                item.getReservedQuantity(),
+                item.getStockQuantity()
+        );
+    }
+
+    private InventoryItem mapToEntity(InventoryItemDTO itemDTO) {
+        InventoryItem item = new InventoryItem();
+        item.setId(itemDTO.getId());
+        item.setProductId(itemDTO.getProductId());
+        item.setStockQuantity(itemDTO.getAvailableQuantity());
+        item.setReservedQuantity(itemDTO.getReservedQuantity());
+        return item;
+    }
+
+
     @Override
     @Transactional
     public InventoryItemDTO createOrUpdateInventory(InventoryItemDTO inventoryItemDTO) {
-        InventoryItem item = inventoryItemRepository.findByProductId(inventoryItemDTO.getProductId())
+        InventoryItem item = inventoryRepository.findByProductId(inventoryItemDTO.getProductId())
                 .orElse(new InventoryItem());
-        
+
         if (item.getId() == null) {
             item.setProductId(inventoryItemDTO.getProductId());
             item.setReservedQuantity(0);
         }
-        
+
         item.setQuantity(inventoryItemDTO.getQuantity());
-        
-        InventoryItem savedItem = inventoryItemRepository.save(item);
+
+        InventoryItem savedItem = inventoryRepository.save(item);
         return mapToDTO(savedItem);
     }
-    
-    @Override
-    public InventoryItemDTO getInventoryByProductId(Long productId) {
-        InventoryItem item = inventoryItemRepository.findByProductId(productId)
-                .orElseThrow(() -> new RuntimeException("Inventory not found for product: " + productId));
-        return mapToDTO(item);
-    }
-    
+
     @Override
     public List<InventoryItemDTO> getAllInventory() {
-        return inventoryItemRepository.findAll().stream()
+        return inventoryRepository.findAll().stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
-    
+
     @Override
     public boolean isProductAvailable(Long productId, Integer quantity) {
-        InventoryItem item = inventoryItemRepository.findByProductId(productId)
+        InventoryItem item = inventoryRepository.findByProductId(productId)
                 .orElse(null);
-        
+
         if (item == null) {
             return false;
         }
-        
+
         int availableQuantity = item.getQuantity() - item.getReservedQuantity();
         return availableQuantity >= quantity;
     }
-    
+
     @Override
     @Transactional
     public void reserveStock(Long productId, Integer quantity) {
-        InventoryItem item = inventoryItemRepository.findByProductId(productId)
+        InventoryItem item = inventoryRepository.findByProductId(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found in inventory: " + productId));
-        
+
         int availableQuantity = item.getQuantity() - item.getReservedQuantity();
         if (availableQuantity < quantity) {
             throw new RuntimeException("Insufficient stock for product: " + productId);
         }
-        
+
         item.setReservedQuantity(item.getReservedQuantity() + quantity);
-        inventoryItemRepository.save(item);
-        
+        inventoryRepository.save(item);
+
         log.info("Reserved {} units for product {}", quantity, productId);
     }
-    
+
     @Override
     @Transactional
     public void releaseStock(Long productId, Integer quantity) {
-        InventoryItem item = inventoryItemRepository.findByProductId(productId)
+        InventoryItem item = inventoryRepository.findByProductId(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found in inventory: " + productId));
-        
+
         item.setReservedQuantity(Math.max(0, item.getReservedQuantity() - quantity));
-        inventoryItemRepository.save(item);
-        
+        inventoryRepository.save(item);
+
         log.info("Released {} units for product {}", quantity, productId);
     }
-    
-    @Override
+
+
     @KafkaListener(topics = "order.created", groupId = "inventory-service")
     @Transactional
-    public void processOrderCreatedEvent(OrderCreatedEvent event) {
-        log.info("Processing order created event for order: {}", event.getOrderId());
-        
-        for (OrderCreatedEvent.OrderItemEvent item : event.getItems()) {
+    @Override
+    public void processOrderDTO(OrderDTO event) {
+        log.info("Processing order created event for order: {}", event.getId());
+
+        for (OrderItemDTO item : event.getItems()) {
             try {
                 reserveStock(item.getProductId(), item.getQuantity());
             } catch (Exception e) {
-                log.error("Failed to reserve stock for product {} in order {}: {}", 
-                         item.getProductId(), event.getOrderId(), e.getMessage());
+                log.error("Failed to reserve stock for product {} in order {}: {}",
+                        item.getProductId(), event.getId(), e.getMessage());
                 // In a production system, you might want to publish a compensation event
             }
         }
     }
-    
+
     @Override
     public List<InventoryItemDTO> getLowStockItems() {
-        return inventoryItemRepository.findLowStockItems().stream()
+        return inventoryRepository.findLowStockItems().stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
-    
-    private InventoryItemDTO mapToDTO(InventoryItem item) {
-        InventoryItemDTO dto = new InventoryItemDTO();
-        dto.setId(item.getId());
-        dto.setProductId(item.getProductId());
-        dto.setQuantity(item.getQuantity());
-        dto.setReservedQuantity(item.getReservedQuantity());
-        dto.setAvailableQuantity(item.getQuantity() - item.getReservedQuantity());
-        return dto;
-    }
+
 }

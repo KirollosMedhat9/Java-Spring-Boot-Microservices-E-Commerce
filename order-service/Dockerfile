@@ -2,8 +2,8 @@
 FROM openjdk:17-jdk-slim
 
 ARG JAR_FILE=target/*.jar
-COPY ${JAR_FILE} app.jar
+COPY ${JAR_FILE} order-service.jar
 
 EXPOSE 8082
 
-ENTRYPOINT ["java","-jar","/app.jar"]
+ENTRYPOINT ["java","-jar","/order-service.jar"]
