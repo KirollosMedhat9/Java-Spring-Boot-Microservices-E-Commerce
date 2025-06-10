@@ -96,38 +96,38 @@ package_inventory_service:
     - main
     - develop
 
-package_notification_service:
-  stage: package
-  image: maven:3.8.4-openjdk-17
-  script:
-    - mvn $MAVEN_CLI_OPTS -pl notification-service clean package -DskipTests
-    - docker build -t $DOCKER_IMAGE_TAG/notification-service:$CI_COMMIT_SHA ./notification-service
-    - docker push $DOCKER_IMAGE_TAG/notification-service:$CI_COMMIT_SHA
-  only:
-    - main
-    - develop
+# package_notification_service:
+#   stage: package
+#   image: maven:3.8.4-openjdk-17
+#   script:
+#     - mvn $MAVEN_CLI_OPTS -pl notification-service clean package -DskipTests
+#     - docker build -t $DOCKER_IMAGE_TAG/notification-service:$CI_COMMIT_SHA ./notification-service
+#     - docker push $DOCKER_IMAGE_TAG/notification-service:$CI_COMMIT_SHA
+#   only:
+#     - main
+#     - develop
 
-package_auth_server:
-  stage: package
-  image: maven:3.8.4-openjdk-17
-  script:
-    - mvn $MAVEN_CLI_OPTS -pl auth-server clean package -DskipTests
-    - docker build -t $DOCKER_IMAGE_TAG/auth-server:$CI_COMMIT_SHA ./auth-server
-    - docker push $DOCKER_IMAGE_TAG/auth-server:$CI_COMMIT_SHA
-  only:
-    - main
-    - develop
+# package_auth_server:
+#   stage: package
+#   image: maven:3.8.4-openjdk-17
+#   script:
+#     - mvn $MAVEN_CLI_OPTS -pl auth-server clean package -DskipTests
+#     - docker build -t $DOCKER_IMAGE_TAG/auth-server:$CI_COMMIT_SHA ./auth-server
+#     - docker push $DOCKER_IMAGE_TAG/auth-server:$CI_COMMIT_SHA
+#   only:
+#     - main
+#     - develop
 
-package_config_server:
-  stage: package
-  image: maven:3.8.4-openjdk-17
-  script:
-    - mvn $MAVEN_CLI_OPTS -pl config-server clean package -DskipTests
-    - docker build -t $DOCKER_IMAGE_TAG/config-server:$CI_COMMIT_SHA ./config-server
-    - docker push $DOCKER_IMAGE_TAG/config-server:$CI_COMMIT_SHA
-  only:
-    - main
-    - develop
+# package_config_server:
+#   stage: package
+#   image: maven:3.8.4-openjdk-17
+#   script:
+#     - mvn $MAVEN_CLI_OPTS -pl config-server clean package -DskipTests
+#     - docker build -t $DOCKER_IMAGE_TAG/config-server:$CI_COMMIT_SHA ./config-server
+#     - docker push $DOCKER_IMAGE_TAG/config-server:$CI_COMMIT_SHA
+#   only:
+#     - main
+#     - develop
 
 deploy_to_staging:
   stage: deploy
@@ -141,17 +141,17 @@ deploy_to_staging:
     - kubectl set image deployment/product-service product-service=$DOCKER_IMAGE_TAG/product-service:$CI_COMMIT_SHA
     - kubectl set image deployment/order-service order-service=$DOCKER_IMAGE_TAG/order-service:$CI_COMMIT_SHA
     - kubectl set image deployment/inventory-service inventory-service=$DOCKER_IMAGE_TAG/inventory-service:$CI_COMMIT_SHA
-    - kubectl set image deployment/notification-service notification-service=$DOCKER_IMAGE_TAG/notification-service:$CI_COMMIT_SHA
-    - kubectl set image deployment/auth-server auth-server=$DOCKER_IMAGE_TAG/auth-server:$CI_COMMIT_SHA
-    - kubectl set image deployment/config-server config-server=$DOCKER_IMAGE_TAG/config-server:$CI_COMMIT_SHA
+    # - kubectl set image deployment/notification-service notification-service=$DOCKER_IMAGE_TAG/notification-service:$CI_COMMIT_SHA
+    # - kubectl set image deployment/auth-server auth-server=$DOCKER_IMAGE_TAG/auth-server:$CI_COMMIT_SHA
+    # - kubectl set image deployment/config-server config-server=$DOCKER_IMAGE_TAG/config-server:$CI_COMMIT_SHA
     - kubectl rollout status deployment/service-registry
     - kubectl rollout status deployment/api-gateway
     - kubectl rollout status deployment/product-service
     - kubectl rollout status deployment/order-service
     - kubectl rollout status deployment/inventory-service
-    - kubectl rollout status deployment/notification-service
-    - kubectl rollout status deployment/auth-server
-    - kubectl rollout status deployment/config-server
+    # - kubectl rollout status deployment/notification-service
+    # - kubectl rollout status deployment/auth-server
+    # - kubectl rollout status deployment/config-server
   environment:
     name: staging
   only:
@@ -169,18 +169,18 @@ deploy_to_production:
     - kubectl set image deployment/product-service product-service=$DOCKER_IMAGE_TAG/product-service:$CI_COMMIT_SHA
     - kubectl set image deployment/order-service order-service=$DOCKER_IMAGE_TAG/order-service:$CI_COMMIT_SHA
     - kubectl set image deployment/inventory-service inventory-service=$DOCKER_IMAGE_TAG/inventory-service:$CI_COMMIT_SHA
-    - kubectl set image deployment/notification-service notification-service=$DOCKER_IMAGE_TAG/notification-service:$CI_COMMIT_SHA
-    - kubectl set image deployment/auth-server auth-server=$DOCKER_IMAGE_TAG/auth-server:$CI_COMMIT_SHA
-    - kubectl set image deployment/config-server config-server=$DOCKER_IMAGE_TAG/config-server:$CI_COMMIT_SHA
+    # - kubectl set image deployment/notification-service notification-service=$DOCKER_IMAGE_TAG/notification-service:$CI_COMMIT_SHA
+    # - kubectl set image deployment/auth-server auth-server=$DOCKER_IMAGE_TAG/auth-server:$CI_COMMIT_SHA
+    # - kubectl set image deployment/config-server config-server=$DOCKER_IMAGE_TAG/config-server:$CI_COMMIT_SHA
     - kubectl rollout status deployment/service-registry
     - kubectl rollout status deployment/api-gateway
     - kubectl rollout status deployment/product-service
     - kubectl rollout status deployment/order-service
     - kubectl rollout status deployment/inventory-service
-    - kubectl rollout status deployment/notification-service
-    - kubectl rollout status deployment/auth-server
-    - kubectl rollout status deployment/config-server
-  environment:
+  #   - kubectl rollout status deployment/notification-service
+  #   - kubectl rollout status deployment/auth-server
+  #   - kubectl rollout status deployment/config-server
+  # environment:
     name: production
   when: manual
   only:
