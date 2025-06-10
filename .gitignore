@@ -23,8 +23,23 @@
 hs_err_pid*
 replay_pid*
 
-notification-service
-auth-server
-.idea
-Main.class
-config-server
+# IDE
+.idea/
+*.iml
+
+# Build directories
+target/          # Maven
+bin/
+out/
+
+
+auth-server/     
+notification-service/
+config-server/
+
+# Class files
+*.class
+Main.class      
+
+
+
