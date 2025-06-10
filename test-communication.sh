@@ -20,7 +20,7 @@ curl -X POST http://localhost:8081/api/v1/products \
 
 echo -e "\n\n2. Checking if inventory was created..."
 sleep 2
-curl http://localhost:8084/api/v1/inventory/3
+curl http://localhost:8084/api/v1/inventory/9
 
 echo -e "\n\n3. Creating an order (should reduce inventory and send notification)..."
 curl -X POST http://localhost:8082/api/v1/orders \
@@ -29,7 +29,7 @@ curl -X POST http://localhost:8082/api/v1/orders \
     "customerId": "customer123",
     "items": [
       {
-        "productId": 3,
+        "productId": 13,
         "productName": "Test Product",
         "quantity": 2,
         "unitPrice": 99.99,
@@ -42,6 +42,6 @@ curl -X POST http://localhost:8082/api/v1/orders \
 
 echo -e "\n\n4. Checking updated inventory..."
 sleep 2
-curl http://localhost:8084/api/v1/inventory/3
-sleep 200
+curl http://localhost:8084/api/v1/inventory/9
+sleep 10
 echo -e "\n\nTest complete! Check service logs for Kafka message processing."

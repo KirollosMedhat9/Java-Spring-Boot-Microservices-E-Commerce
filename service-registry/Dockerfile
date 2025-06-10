@@ -6,4 +6,4 @@ COPY ${JAR_FILE} service-registry.jar
 
 EXPOSE 8761
 
-ENTRYPOINT ["java","-jar","/app/service-registry.jar"]
+ENTRYPOINT ["java","-jar","/service-registry.jar"]

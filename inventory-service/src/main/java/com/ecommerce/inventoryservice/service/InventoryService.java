@@ -29,11 +29,11 @@ public interface InventoryService {
 
     void releaseStock(Long productId, Integer quantity);
 
-    //void processOrderCreatedEvent(OrderDTO event);
+    void handleOrderCreated(OrderDTO event);
 
-    @KafkaListener(topics = "order.created", groupId = "inventory-service")
-    @Transactional
-    void processOrderDTO(OrderDTO event);
+//    @KafkaListener(topics = "order.created", groupId = "inventory-service")
+//    @Transactional
+//    void processOrderDTO(OrderDTO event);
 
     List<InventoryItemDTO> getLowStockItems();
 

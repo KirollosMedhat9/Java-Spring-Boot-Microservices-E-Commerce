@@ -1,10 +1,9 @@
 
 FROM openjdk:17-jdk-slim
 
-WORKDIR /app
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} inventory-service.jar
 
-COPY target/inventory-service-1.0.0.jar app.jar
+EXPOSE 8082
 
-EXPOSE 8083
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java","-jar","/inventory-service.jar"]

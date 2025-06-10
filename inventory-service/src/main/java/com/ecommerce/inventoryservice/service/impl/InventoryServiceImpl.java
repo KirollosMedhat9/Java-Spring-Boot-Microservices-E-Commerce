@@ -108,7 +108,6 @@ public class InventoryServiceImpl implements InventoryService {
 
         // Parse the product event and create inventory entry
         try {
-            // Assuming productDTO contains productId and initial stock
             Long productId = extractProductId(productDTO);
             Integer initialStock = extractInitialStock(productDTO);
 
@@ -142,23 +141,15 @@ public class InventoryServiceImpl implements InventoryService {
         }
     }
 
-    //    public Long extractProductId(ProductDTO event) {
-//        // Simple extraction - in real implementation, you'd parse the JSON
-//        String eventStr = event.toString();
-//        // This is a simplified extraction - you should implement proper JSON parsing
-//        return event.getId(); // Placeholder
-//    }
+
     @Override
     public Long extractProductId(ProductDTO event) {
-        // Simple extraction - in real implementation, you'd parse the JSON
         String eventStr = event.toString();
-        // This is a simplified extraction - you should implement proper JSON parsing
-        return event.getId(); // Placeholder
+        return event.getId();
     }
 
     private Integer extractInitialStock(ProductDTO event) {
-        // Extract initial stock from product event
-        return event.getStockQuantity(); // Default to 0 if not specified
+        return event.getStockQuantity();
     }
 
     private InventoryItemDTO mapToDTO(InventoryItem item) {
@@ -245,24 +236,6 @@ public class InventoryServiceImpl implements InventoryService {
         inventoryRepository.save(item);
 
         log.info("Released {} units for product {}", quantity, productId);
-    }
-
-
-    @KafkaListener(topics = "order.created", groupId = "inventory-service")
-    @Transactional
-    @Override
-    public void processOrderDTO(OrderDTO event) {
-        log.info("Processing order created event for order: {}", event.getId());
-
-        for (OrderItemDTO item : event.getItems()) {
-            try {
-                reserveStock(item.getProductId(), item.getQuantity());
-            } catch (Exception e) {
-                log.error("Failed to reserve stock for product {} in order {}: {}",
-                        item.getProductId(), event.getId(), e.getMessage());
-                // In a production system, you might want to publish a compensation event
-            }
-        }
     }
 
     @Override

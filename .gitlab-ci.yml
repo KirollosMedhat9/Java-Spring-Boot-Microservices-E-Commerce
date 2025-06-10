@@ -180,7 +180,7 @@ deploy_to_production:
   #   - kubectl rollout status deployment/notification-service
   #   - kubectl rollout status deployment/auth-server
   #   - kubectl rollout status deployment/config-server
-  # environment:
+  environment:
     name: production
   when: manual
   only:

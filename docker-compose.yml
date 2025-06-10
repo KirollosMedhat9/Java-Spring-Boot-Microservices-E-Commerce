@@ -6,33 +6,82 @@ services:
     build: ./service-registry/
     ports:
       - "8761:8761"
-    volumes:
-      - ./service-registry/target:/app
-    entrypoint: [ "java", "-jar", "/app/service-registry-1.0.0.jar" ]
+    container_name: service-registry
+    networks:
+      - ecommerce-network
+
 
   api-gateway:
     build: ./api-gateway/
     ports:
       - "8080:8080"
-    volumes:
-      - ./api-gateway/target:/app
-    entrypoint: [ "java", "-jar", "/app/api-gateway-1.0.0.jar" ]
+    container_name: api-gateway
     depends_on:
       - service-registry
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+    networks:
+      - ecommerce-network
 
-#  product-service:
-#    build: ./product-service/
-#    ports:
-#      - "8081:8081"
-#    volumes:
-#      - ./product-service/target:/app
-#    entrypoint: [ "java", "-jar", "/app/product-service-1.0.0.jar" ]
-#    depends_on:
-#      - service-registry
-#      - mysql-db
+  product-service:
+    build: ./product-service/
+    ports:
+      - "8081:8081"
+    container_name: product-service
+    depends_on:
+      - mysql-db
+      - service-registry
+      - kafka
+      - api-gateway
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/product_db
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS=kafka:29092
+      - SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS=kafka:29092
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+    networks:
+      - ecommerce-network
+
+  order-service:
+    build: ./order-service/
+    ports:
+      - "8082:8082"
+    container_name: order-service
+    depends_on:
+      - postgres-db
+      - service-registry
+      - kafka
+      - api-gateway
+    networks:
+      - ecommerce-network
+    environment:
+      - SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS=kafka:29092
+      - SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS=kafka:29092
+
+  inventory-service:
+    build: ./inventory-service/
+    ports:
+      - "8084:8084"
+    container_name: inventory-service
+    depends_on:
+      - mysql-db
+      - service-registry
+      - kafka
+      - api-gateway
+    networks:
+      - ecommerce-network
+    environment:
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/inventory_db
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=password
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka/
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
 
-    #Databases
+
+
   mysql-db:
     image: mysql:8.0
     container_name: mysql-db
@@ -48,11 +97,12 @@ services:
     networks:
       - ecommerce-network
 
+
   postgres-db:
     image: postgres:15
     container_name: postgres-db
     ports:
-      - "5433:5432"
+      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -66,9 +116,9 @@ services:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
     ports:
-      - "3181:3181"
+      - "2181:2181"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 3181
+      ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     networks:
       - ecommerce-network
@@ -81,11 +131,13 @@ services:
       - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:3181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: EXTERNAL://localhost:9092,INTERNAL://kafka:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
     depends_on:
       - zookeeper
     networks:
