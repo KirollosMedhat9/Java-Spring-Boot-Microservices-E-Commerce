@@ -79,15 +79,23 @@ mvn spring-boot:run -pl order-service
 
 ### Testing
 
-Run unit tests:
-```bash
-mvn test
-```
+[//]: # ()
+[//]: # (Run unit tests:)
 
-Run integration tests:
-```bash
-mvn verify
-```
+[//]: # (```bash)
+
+[//]: # (mvn test)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (Run integration tests:)
+
+[//]: # (```bash)
+
+[//]: # (mvn verify)
+
+[//]: # (```)
 For quick test for: 
 Adding Product ->
 Checking Inventory -> 
